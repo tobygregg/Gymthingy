@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Granite.Fit</title>
+
+<!-- iOS "Add to Home Screen" support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Granite.Fit">
+<meta name="theme-color" content="#000958">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="manifest" href="manifest.json">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#F3F4F7;
+    --card:#FFFFFF;
+    --ink:#15161C;
+    --gray:#7C8192;
+    --gray-2:#9BA0AE;
+    --border:#ECEDF1;
+    --pill-bg:#F1F2F5;
+    --orange:#E8821E;
+    --orange-soft:#FCEBD3;
+    --unlock-fill:#FBE0A4;
+    --unlock-fill-2:#FCEEC8;
+    --green-bg:#DDFBE7;
+    --green-ink:#16A34A;
+    --navy:#000958;
+    --purple-1:#B98CFF;
+    --purple-2:#7C3AED;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; height:100%; overscroll-behavior:none;}
+  body{
+    font-family:-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif;
+    background: var(--navy);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    min-height:100dvh;
+    background:var(--bg);
+    position:relative;
+    overflow:hidden;
+  }
+
+  button{ font-family:inherit; cursor:pointer; }
+  a { text-decoration:none; color:inherit; }
+  input, select { font-family:inherit; }
+
+  /* ---------- SCREEN MANAGEMENT ---------- */
+  .screen{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    min-height:100%;
+    background:var(--bg);
+  }
+  .screen.active{ display:flex; }
+
+  .screen-scroll{
+    flex:1;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding: calc(18px + var(--safe-t)) 18px 110px;
+  }
+
+  /* ---------- SPLASH ---------- */
+  #screen-splash{
+    background:var(--navy);
+    justify-content:flex-start;
+    align-items:center;
+    position:absolute; inset:0;
+    z-index:50;
+  }
+  #screen-splash .splash-body{
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    flex:1; width:100%;
+    padding-top: 24vh;
+  }
+  .splash-logo{ width:120px; height:120px; margin-bottom:34px; }
+  .splash-title{ color:#fff; font-weight:600; font-size:17px; letter-spacing:.2px; margin-bottom:22px; }
+  .spinner{ position:relative; width:32px; height:32px; }
+  .spinner div{
+    position:absolute; left:14.5px; top:1px; width:3px; height:9px; border-radius:2px;
+    background:#B9BAD6; transform-origin: 1.5px 15px;
+    animation:spin-fade 1s linear infinite;
+  }
+  .spinner div:nth-child(1){ transform:rotate(0deg); animation-delay:-0.875s;}
+  .spinner div:nth-child(2){ transform:rotate(45deg); animation-delay:-0.75s;}
+  .spinner div:nth-child(3){ transform:rotate(90deg); animation-delay:-0.625s;}
+  .spinner div:nth-child(4){ transform:rotate(135deg); animation-delay:-0.5s;}
+  .spinner div:nth-child(5){ transform:rotate(180deg); animation-delay:-0.375s;}
+  .spinner div:nth-child(6){ transform:rotate(225deg); animation-delay:-0.25s;}
+  .spinner div:nth-child(7){ transform:rotate(270deg); animation-delay:-0.125s;}
+  .spinner div:nth-child(8){ transform:rotate(315deg); animation-delay:0s;}
+  @keyframes spin-fade{ 0%{opacity:1;} 100%{opacity:.15;} }
+  .splash-version{
+    position:absolute; right:16px; bottom: calc(14px + var(--safe-b));
+    color:#5C5B87; font-size:12px; font-weight:500;
+  }
+
+  /* ---------- HEADER ---------- */
+  .header-row{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .header-title{ font-size:30px; font-weight:600; letter-spacing:-.3px; line-height:1.15;}
+  .header-sub{ color:var(--gray); font-size:15px; font-weight:500; margin-top:4px;}
+  .icon-btn{
+    width:44px; height:44px; border-radius:14px;
+    background:#fff; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    flex:none;
+  }
+  .back-row{ display:flex; align-items:center; gap:14px; margin-bottom:20px;}
+  .back-row .header-title{ font-size:24px; }
+
+  /* ---------- CARDS ---------- */
+  .card{
+    background:var(--card);
+    border-radius:24px;
+    padding:22px;
+    margin-bottom:16px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid var(--border);
+  }
+
+  .promo-card{ padding-right: 96px; }
+  .promo-heading{ color:var(--orange); font-weight:600; font-size:19px; margin:0 0 8px; }
+  .promo-text{ color:var(--gray); font-size:14.5px; line-height:1.45; margin:0 0 18px; font-weight:500;}
+  .promo-btn{
+    background:#fff; border:1.5px solid #E7E2D8; color:var(--ink);
+    font-weight:600; font-size:15px; padding:13px 20px; border-radius:14px;
+  }
+  .promo-icon{
+    position:absolute; top:-6px; right:-14px; width:118px; height:118px;
+    color:var(--unlock-fill);
+  }
+
+  .empty-card{ text-align:center; padding:28px 20px; }
+  .empty-title{ font-weight:600; font-size:18px; margin:0 0 8px; }
+  .empty-text{ color:var(--gray); font-size:14.5px; font-weight:500; line-height:1.45; margin:0 0 18px;}
+  .empty-btn{
+    background:var(--pill-bg); border:none; color:var(--ink);
+    font-weight:600; font-size:15px; padding:14px 26px; border-radius:14px;
+  }
+
+  /* profile card */
+  .profile-card{ display:flex; flex-direction:column; gap:16px; }
+  .profile-top{ display:flex; align-items:center; gap:14px; }
+  .avatar{
+    width:64px; height:64px; border-radius:50%;
+    border:1.5px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:600; font-size:19px; color:var(--ink);
+    background:#fff; flex:none;
+  }
+  .profile-name{ font-weight:600; font-size:21px; line-height:1.2; }
+  .profile-club{ display:flex; align-items:center; gap:5px; color:var(--gray); font-weight:600; font-size:14.5px; margin-top:4px;}
+  .profile-club svg{ width:14px; height:14px; flex:none; }
+
+  .stat-pills{ display:flex; gap:8px; }
+  .stat-pill{
+    background:var(--pill-bg); border-radius:999px; padding:9px 12px;
+    display:flex; align-items:center; gap:6px; font-weight:600; font-size:13.5px;
+    white-space:nowrap;
+  }
+
+  /* membership card */
+  .membership-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .status-pill{
+    display:flex; align-items:center; gap:6px;
+    background:var(--green-bg); color:var(--green-ink);
+    font-weight:600; font-size:13.5px; padding:7px 12px 7px 10px; border-radius:999px;
+  }
+  .status-pill.inactive{ background:#F1F2F5; color:var(--gray);}
+  .status-dot{ width:9px; height:9px; border-radius:50%; border:2px solid currentColor; }
+  .menu-dots{
+    width:36px; height:36px; border-radius:10px; border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; background:#fff;
+  }
+  .membership-title{ font-weight:600; font-size:19px; margin:0 0 12px; line-height:1.25;}
+  .membership-row{ display:flex; align-items:center; gap:9px; font-weight:600; font-size:14.5px; margin-bottom:8px;}
+  .membership-row svg{ width:17px; height:17px; color:var(--ink); flex:none;}
+  .membership-sub{ color:var(--gray); font-size:13.5px; font-weight:600; }
+  .dot-sep{ color:#C7CAD3; margin:0 6px; }
+
+  .section-label{
+    color:var(--gray-2); font-weight:600; font-size:12.5px; letter-spacing:.6px;
+    text-transform:uppercase; margin:22px 2px 10px;
+  }
+
+  .list-card{ background:var(--card); border-radius:24px; overflow:hidden; border:1px solid var(--border);}
+  .list-row{
+    display:flex; align-items:center; gap:14px; padding:16px 18px;
+    border-bottom:1px solid var(--border);
+    background:none; border-left:none; border-right:none; border-top:none;
+    width:100%; text-align:left; color:var(--ink);
+  }
+  .list-row:last-child{ border-bottom:none; }
+  .list-row .row-icon{ width:22px; height:22px; color:var(--ink); flex:none; }
+  .list-row .row-label{ flex:1; font-weight:600; font-size:15.5px; }
+  .list-row .row-chev{ width:18px; height:18px; color:#C4C8D1; flex:none;}
+
+  /* ---------- ACCESS SCREEN ---------- */
+  .dots-row{ display:flex; align-items:center; justify-content:center; gap:6px; margin: 4px 0 18px;}
+  .dot{ width:7px; height:7px; border-radius:999px; background:#DADDE3; }
+  .dot.active{ background:var(--orange); }
+
+  .door-card{ padding-bottom:26px; }
+  .door-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .door-title{ font-weight:600; font-size:19px; }
+  .star-btn{ width:22px; height:22px; color:var(--gray-2); }
+  .door-sub{ display:flex; align-items:center; gap:6px; color:var(--gray); font-weight:600; font-size:14.5px; margin-bottom:18px;}
+  .door-sub svg{ width:14px; height:14px; }
+
+  .slider-track{
+    position:relative; height:52px; border-radius:16px; background:var(--pill-bg);
+    display:flex; align-items:center; padding:4px; overflow:hidden;
+    touch-action:none; user-select:none;
+  }
+  .slider-chevrons{
+    position:absolute; left:66px; top:0; bottom:0; display:flex; align-items:center; gap:2px;
+    color:#C4C8D1; pointer-events:none;
+  }
+  .slider-chevrons svg{ width:14px; height:14px; }
+  .slider-knob{
+    width:44px; height:44px; border-radius:12px; background:#fff;
+    box-shadow:0 2px 6px rgba(20,20,40,.12);
+    display:flex; align-items:center; justify-content:center; flex:none;
+    color:var(--ink); position:relative; z-index:2;
+  }
+  .slider-knob svg{ width:19px; height:19px; }
+  .slider-hint{ text-align:center; color:var(--gray-2); font-weight:600; font-size:12.5px; margin-top:10px; }
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottom-nav{
+    position:absolute; left:0; right:0; bottom:0;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(10px);
+    border-top:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-around;
+    padding: 10px 6px calc(10px + var(--safe-b));
+    z-index:10;
+  }
+  .nav-btn{ background:none; border:none; padding:8px 16px; border-radius:14px; display:flex; align-items:center; justify-content:center; }
+  .nav-btn svg{ width:24px; height:24px; color:#A7ABB8; }
+  .nav-btn.active{ background:var(--orange-soft); }
+  .nav-btn.active svg{ color:var(--orange); }
+
+  /* ---------- EDIT SCREEN ---------- */
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-weight:600; font-size:13px; color:var(--gray); margin-bottom:7px; text-transform:uppercase; letter-spacing:.4px;}
+  .field input, .field select{
+    width:100%; padding:14px 15px; border-radius:14px; border:1.5px solid var(--border);
+    background:#fff; font-size:15.5px; font-weight:600; color:var(--ink);
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--orange); }
+  .field-row{ display:flex; gap:12px; }
+  .field-row .field{ flex:1; }
+  .save-btn{
+    width:100%; background:var(--navy); color:#fff; font-weight:600; font-size:16px;
+    padding:16px; border-radius:16px; border:none; margin-top:6px;
+  }
+  .save-btn:active{ opacity:.85; }
+
+  .link-panel{
+    background:#fff; border:1.5px solid var(--border); border-radius:18px; padding:18px; margin-top:18px;
+  }
+  .link-panel h4{ margin:0 0 6px; font-size:15.5px; font-weight:600; }
+  .link-panel p{ margin:0 0 12px; color:var(--gray); font-size:13.5px; font-weight:500; line-height:1.5;}
+  .link-box{
+    display:flex; gap:8px; align-items:center; background:var(--pill-bg); border-radius:12px; padding:10px 12px; margin-bottom:12px;
+  }
+  .link-box input{ flex:1; border:none; background:none; font-size:12.5px; font-weight:600; color:var(--ink); padding:0; min-width:0; }
+  .link-box input:focus{ outline:none; }
+  .copy-btn{ background:var(--navy); color:#fff; border:none; border-radius:9px; padding:9px 14px; font-weight:600; font-size:12.5px; flex:none;}
+  .steps{ margin:0; padding-left:18px; color:var(--gray); font-size:13.5px; font-weight:500; line-height:1.7;}
+
+  .toast{
+    position:fixed; left:50%; bottom:28px; transform:translateX(-50%) translateY(20px);
+    background:var(--navy); color:#fff; padding:12px 20px; border-radius:14px;
+    font-weight:600; font-size:14px; opacity:0; pointer-events:none; transition:all .25s ease;
+    z-index:200; white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ SPLASH ============ -->
+  <div id="screen-splash" class="screen active">
+    <div class="splash-body">
+      <img class="splash-logo" src="icons/icon-512.png" alt="Granite.Fit" width="120" height="120">
+
+      <div class="splash-title">Loading Router...</div>
+      <div class="spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+    <div class="splash-version">2.14.16391</div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <div id="screen-home" class="screen">
+    <div class="screen-scroll">
+      <div class="header-row">
+        <div>
+          <div class="header-title" id="home-greeting">Hello, Toby</div>
+          <div class="header-sub">Welcome Back</div>
+        </div>
+        <button class="icon-btn" aria-label="Inbox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 8.5 12 3l9 5.5V19a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M3 9l7.2 4.5a3 3 0 0 0 3.2 0L20.6 9"/></svg>
+        </button>
+      </div>
+
+      <div class="card promo-card">
+        <div class="promo-heading">Enable Door Access</div>
+        <p class="promo-text">You need to setup your device to enable access.</p>
+        <button class="promo-btn" onclick="go('access')">Go To Access</button>
+        <svg class="promo-icon" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="22" y="46" width="46" height="38" rx="9"/>
+          <path d="M32 46V30a18 18 0 0 1 34-8"/>
+          <circle cx="45" cy="63" r="5" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+
+      <div class="card empty-card">
+        <div class="empty-title">No upcoming classes</div>
+        <p class="empty-text">Book a class to set your goals in motion.</p>
+        <button class="empty-btn" onclick="go('access')">Book Class</button>
+      </div>
+
+      <div class="card empty-card">
+        <div class="empty-title">No upcoming appointments</div>
+        <p class="empty-text">Book an appointment to set your goals in motion.</p>
+        <button class="empty-btn" onclick="go('access')">Book Appointment</button>
+      </div>
+    </div>
+    <div class="nav-slot"></div>
+  </div>
+
+  <!-- ============ ACCOUNT ============ -->
+  <div id="screen-account" class="screen">
+    <div class="screen-scroll">
+      <div class="header-row">
+        <div class="header-title">Profile</div>
+        <button class="icon-btn" aria-label="Edit profile" onclick="go('edit')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="19" height="19"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+      </div>
+
+      <div class="card profile-card">
+        <div class="profile-top">
+          <div class="avatar" id="acc-avatar">TG</div>
+          <div>
+            <div class="profile-name" id="acc-name">Toby Gregg</div>
+            <div class="profile-club">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span id="acc-club">Granite.Fit</span>
+            </div>
+          </div>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill">🚪 <span id="acc-visits">44</span> Visits</div>
+          <div class="stat-pill">👥 <span id="acc-classes">0</span> Classes</div>
+          <div class="stat-pill">📅 <span id="acc-appts">0</span> Appointments</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="membership-top">
+          <div class="status-pill" id="acc-status-pill"><span class="status-dot"></span><span id="acc-status-text">Active</span></div>
+          <button class="menu-dots" aria-label="More options">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+          </button>
+        </div>
+        <div class="membership-title" id="acc-membership-title">Student Gym Membership 16 Years +</div>
+        <div class="membership-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2.1l4 4-4 4"/><path d="M3 12.7V12a9 9 0 0 1 9-9c2.4 0 4.6.9 6.3 2.4"/><path d="M7 21.9l-4-4 4-4"/><path d="M21 11.3v.7a9 9 0 0 1-9 9c-2.4 0-4.6-.9-6.3-2.4"/></svg>
+          <span>Next payment: <strong id="acc-next-payment">£40.00 on the Oct 1, 2026</strong></span>
+        </div>
+        <div class="membership-sub">
+          <span id="acc-price-line">£40.00 / monthly on 1st</span><span class="dot-sep">•</span>Recurring<span class="dot-sep">•</span>Till <span id="acc-till">Jun 18, 2026</span>
+        </div>
+      </div>
+
+      <div class="section-label">Account</div>
+      <div class="list-card">
+        <button class="list-row" onclick="toast('Memberships')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+          <span class="row-label">Memberships</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="list-row" onclick="toast('Credit Packs')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><circle cx="15" cy="15" r="6"/></svg>
+          <span class="row-label">Credit Packs</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="list-row" onclick="toast('Visits')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          <span class="row-label">Visits</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="list-row" onclick="go('access')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>
+          <span class="row-label">Access</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="list-row" onclick="toast('Change Club')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="row-label">Change Club</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="section-label">Booking</div>
+      <div class="list-card">
+        <button class="list-row" onclick="toast('Classes')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/></svg>
+          <span class="row-label">Classes</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="nav-slot"></div>
+  </div>
+
+  <!-- ============ ACCESS ============ -->
+  <div id="screen-access" class="screen">
+    <div class="screen-scroll">
+      <div class="back-row">
+        <button class="icon-btn" style="border:none;background:none;width:28px;height:28px;" onclick="go('account')" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="header-title">Access</div>
+      </div>
+
+      <div class="card promo-card door-card">
+        <div class="promo-heading">Bluetooth Permission</div>
+        <p class="promo-text">You need to grant access to Bluetooth to enable access.</p>
+        <button class="promo-btn" onclick="toast('Opening Bluetooth Settings')">Bluetooth Settings</button>
+        <svg class="promo-icon" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="22" y="46" width="46" height="38" rx="9"/>
+          <path d="M32 46V30a18 18 0 0 1 34-8"/>
+          <circle cx="45" cy="63" r="5" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+
+      <div class="dots-row">
+        <div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+
+      <div class="card">
+        <div class="door-top">
+          <div class="door-title">Main Door</div>
+          <svg class="star-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9Z"/></svg>
+        </div>
+        <div class="door-sub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Swipe to Open</span>
+        </div>
+
+        <div class="slider-track" id="slider-track">
+          <div class="slider-chevrons">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </div>
+          <div class="slider-knob" id="slider-knob">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>
+          </div>
+        </div>
+        <div class="slider-hint" id="slider-hint">Slide to unlock the door</div>
+      </div>
+    </div>
+    <div class="nav-slot"></div>
+  </div>
+
+  <!-- ============ EDIT PROFILE ============ -->
+  <div id="screen-edit" class="screen">
+    <div class="screen-scroll" style="padding-bottom:40px;">
+      <div class="back-row">
+        <button class="icon-btn" style="border:none;background:none;width:28px;height:28px;" onclick="go('account')" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="header-title">Edit Profile</div>
+      </div>
+
+      <div class="field">
+        <label for="f-name">Full name</label>
+        <input id="f-name" type="text" placeholder="Toby Gregg">
+      </div>
+      <div class="field">
+        <label for="f-club">Club</label>
+        <input id="f-club" type="text" placeholder="Granite.Fit">
+      </div>
+      <div class="field">
+        <label for="f-membership">Membership title</label>
+        <input id="f-membership" type="text" placeholder="Student Gym Membership 16 Years +">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-price">Monthly price (£)</label>
+          <input id="f-price" type="number" step="0.01" placeholder="40.00">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="f-visits">Visits</label>
+          <input id="f-visits" type="number" placeholder="44">
+        </div>
+        <div class="field">
+          <label for="f-classes">Classes</label>
+          <input id="f-classes" type="number" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="f-appts">Appointments</label>
+          <input id="f-appts" type="number" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-till">Membership end date</label>
+        <input id="f-till" type="date">
+      </div>
+
+      <button class="save-btn" onclick="saveProfile()">Save changes</button>
+
+      <div class="link-panel" id="link-panel" style="display:none;">
+        <h4>Your saved demo link is ready</h4>
+        <p>This link always loads Granite.Fit with the exact values you just saved — perfect for pinning to a home screen.</p>
+        <div class="link-box">
+          <input id="share-link" type="text" readonly>
+          <button class="copy-btn" onclick="copyLink()">Copy</button>
+        </div>
+        <ol class="steps">
+          <li>Open the link above in Safari</li>
+          <li>Tap the Share icon, then "Add to Home Screen"</li>
+          <li>It'll always launch with these saved values</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BOTTOM NAV (shared) ============ -->
+  <div class="bottom-nav" id="bottom-nav">
+    <button class="nav-btn" data-tab="home" onclick="go('home')" aria-label="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1v-9"/></svg>
+    </button>
+    <button class="nav-btn" data-tab="classes" onclick="toast('Classes')" aria-label="Classes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5l11 11"/><path d="M17.5 6.5l-11 11"/><rect x="2" y="9" width="4" height="6" rx="1"/><rect x="18" y="9" width="4" height="6" rx="1"/></svg>
+    </button>
+    <button class="nav-btn" data-tab="bookings" onclick="toast('Bookings')" aria-label="Bookings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path d="M3 9.5h18"/><path d="M8 3v3M16 3v3"/><path d="M8.5 14l2 2 4-4"/></svg>
+    </button>
+    <button class="nav-btn" data-tab="shop" onclick="toast('Shop')" aria-label="Shop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12.2a1.5 1.5 0 0 1-1.5 1.8H6.5A1.5 1.5 0 0 1 5 20.2Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+    </button>
+    <button class="nav-btn" data-tab="account" onclick="go('account')" aria-label="Account">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const DEFAULTS = {
+  name: "Toby Gregg",
+  club: "Granite.Fit",
+  membership: "Student Gym Membership 16 Years +",
+  status: "Active",
+  price: 40.00,
+  visits: 44,
+  classes: 0,
+  appts: 0,
+  till: "2026-06-18"
+};
+
+function loadState(){
+  const params = new URLSearchParams(location.search);
+  const d = params.get('d');
+  if (d){
+    try{
+      const decoded = JSON.parse(decodeURIComponent(escape(atob(d.replace(/-/g,'+').replace(/_/g,'/')))));
+      localStorage.setItem('graniteFitProfile', JSON.stringify(decoded));
+      return Object.assign({}, DEFAULTS, decoded);
+    }catch(e){ console.warn('Bad share link data', e); }
+  }
+  try{
+    const stored = localStorage.getItem('graniteFitProfile');
+    if (stored) return Object.assign({}, DEFAULTS, JSON.parse(stored));
+  }catch(e){}
+  return Object.assign({}, DEFAULTS);
+}
+
+let state = loadState();
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function initials(name){
+  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('') || '??';
+}
+
+function fmtMoney(n){
+  const num = Number(n);
+  return '£' + (isNaN(num) ? '0.00' : num.toFixed(2));
+}
+
+function fmtDate(dateObj){
+  return dateObj.toLocaleDateString('en-GB', { month:'short', day:'numeric', year:'numeric' })
+    .replace(/(\w{3}) (\d+), (\d+)/, '$1 $2, $3');
+}
+
+// next occurrence of the 1st of a month, strictly after today
+function nextFirstOfMonth(){
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth();
+  if (now.getDate() >= 1){ m += 1; } // today is always >=1, so always roll to next month's 1st
+  const d = new Date(y, m, 1);
+  return d;
+}
+
+function fmtTill(isoStr){
+  if(!isoStr) return '—';
+  const parts = isoStr.split('-').map(Number);
+  const d = new Date(parts[0], parts[1]-1, parts[2]);
+  return fmtDate(d);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  document.getElementById('home-greeting').textContent = 'Hello, ' + (state.name.split(' ')[0] || state.name);
+
+  document.getElementById('acc-avatar').textContent = initials(state.name);
+  document.getElementById('acc-name').textContent = state.name;
+  document.getElementById('acc-club').textContent = state.club;
+  document.getElementById('acc-visits').textContent = state.visits;
+  document.getElementById('acc-classes').textContent = state.classes;
+  document.getElementById('acc-appts').textContent = state.appts;
+
+  const active = state.status === 'Active';
+  const pill = document.getElementById('acc-status-pill');
+  pill.classList.toggle('inactive', !active);
+  document.getElementById('acc-status-text').textContent = state.status;
+
+  document.getElementById('acc-membership-title').textContent = state.membership;
+
+  const nextDate = fmtDate(nextFirstOfMonth());
+  document.getElementById('acc-next-payment').textContent = fmtMoney(state.price) + ' on the ' + nextDate;
+  document.getElementById('acc-price-line').textContent = fmtMoney(state.price) + ' / monthly on 1st ';
+  document.getElementById('acc-till').textContent = fmtTill(state.till);
+
+  // populate edit form
+  document.getElementById('f-name').value = state.name;
+  document.getElementById('f-club').value = state.club;
+  document.getElementById('f-membership').value = state.membership;
+  document.getElementById('f-status').value = state.status;
+  document.getElementById('f-price').value = state.price;
+  document.getElementById('f-visits').value = state.visits;
+  document.getElementById('f-classes').value = state.classes;
+  document.getElementById('f-appts').value = state.appts;
+  document.getElementById('f-till').value = state.till;
+}
+
+/* ============================================================
+   ROUTING + TRANSITIONS
+   ============================================================ */
+const NAV_MAP = { home:'home', account:'account', access:'account', edit:'account' };
+// left-to-right "rank" of each screen — decides which way the tile slides.
+// Moving to a higher rank slides left (forward); a lower rank slides right (back).
+const RANK = { home:0, account:1, access:2, edit:2 };
+const EASE = 'cubic-bezier(.65,0,.35,1)';
+const ANIM_MS = 240;
+
+let currentScreen = null;
+let animating = false;
+
+function screenEl(name){ return document.getElementById('screen-' + name); }
+
+function slideDirection(fromScreen, toScreen){
+  if (!fromScreen || fromScreen === toScreen) return null;
+  return RANK[toScreen] >= RANK[fromScreen] ? 'left' : 'right';
+}
+
+// Real tile/push slide (like a PowerPoint "Push" transition): the old screen
+// and new screen move together, edge to edge, full width — no fade, no parallax.
+function animate(oldEl, newEl, dir){
+  animating = true;
+  [oldEl, newEl].forEach(el => el.style.willChange = 'transform');
+
+  newEl.classList.add('active');
+  newEl.style.zIndex = '2';
+  oldEl.style.zIndex = '1';
+
+  oldEl.style.transition = 'none';
+  newEl.style.transition = 'none';
+
+  const enterFrom = dir === 'left' ? '100%' : '-100%';
+  const exitTo = dir === 'left' ? '-100%' : '100%';
+
+  newEl.style.transform = `translate3d(${enterFrom},0,0)`;
+  oldEl.style.transform = 'translate3d(0,0,0)';
+
+  // force reflow so the browser registers the starting state before animating
+  void newEl.offsetWidth;
+
+  requestAnimationFrame(()=>{
+    const t = `transform ${ANIM_MS}ms ${EASE}`;
+    oldEl.style.transition = t;
+    newEl.style.transition = t;
+    newEl.style.transform = 'translate3d(0,0,0)';
+    oldEl.style.transform = `translate3d(${exitTo},0,0)`;
+  });
+
+  setTimeout(()=>{
+    oldEl.classList.remove('active');
+    [oldEl, newEl].forEach(el=>{
+      el.style.transition = '';
+      el.style.transform = '';
+      el.style.zIndex = '';
+      el.style.willChange = '';
+    });
+    animating = false;
+  }, ANIM_MS + 20);
+}
+
+function go(screen, opts){
+  opts = opts || {};
+  if (animating) return; // let the current transition finish first
+
+  const newEl = screenEl(screen);
+  const oldScreen = currentScreen;
+  const oldEl = oldScreen ? screenEl(oldScreen) : null;
+
+  const navShown = (screen !== 'edit');
+  document.getElementById('bottom-nav').style.display = navShown ? 'flex' : 'none';
+  document.querySelectorAll('.nav-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.tab === NAV_MAP[screen]);
+  });
+
+  if (!oldEl || oldScreen === screen){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    newEl.classList.add('active');
+  } else {
+    animate(oldEl, newEl, slideDirection(oldScreen, screen));
+  }
+
+  currentScreen = screen;
+
+  if (!opts.silent){
+    const url = new URL(location.href);
+    url.hash = screen;
+    history.pushState({screen}, '', url);
+  }
+  newEl.querySelector('.screen-scroll')?.scrollTo(0,0);
+}
+
+window.addEventListener('popstate', (e)=>{
+  const screen = (e.state && e.state.screen) || (location.hash.replace('#','')) || 'home';
+  go(screen === 'splash' ? 'home' : screen, {silent:true});
+});
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg + ' — demo only';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+
+/* ============================================================
+   DOOR SLIDER
+   ============================================================ */
+(function initSlider(){
+  const track = document.getElementById('slider-track');
+  const knob = document.getElementById('slider-knob');
+  const hint = document.getElementById('slider-hint');
+  let dragging = false, startX = 0, knobX = 0, maxX = 0;
+
+  function bounds(){
+    maxX = track.clientWidth - knob.offsetWidth - 8;
+  }
+
+  function pointerDown(e){
+    dragging = true;
+    bounds();
+    startX = (e.touches ? e.touches[0].clientX : e.clientX) - knobX;
+    knob.style.transition = 'none';
+  }
+  function pointerMove(e){
+    if(!dragging) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+    knobX = Math.max(0, Math.min(maxX, x));
+    knob.style.transform = `translateX(${knobX}px)`;
+  }
+  function pointerUp(){
+    if(!dragging) return;
+    dragging = false;
+    knob.style.transition = 'transform .25s cubic-bezier(.2,.8,.3,1)';
+    if (knobX > maxX * 0.82){
+      knob.style.transform = `translateX(${maxX}px)`;
+      hint.textContent = 'Door unlocked ✓';
+      toast('Main Door unlocked');
+      setTimeout(()=>{
+        knob.style.transform = 'translateX(0)';
+        hint.textContent = 'Slide to unlock the door';
+        knobX = 0;
+      }, 1100);
+    } else {
+      knob.style.transform = 'translateX(0)';
+      knobX = 0;
+    }
+  }
+
+  knob.addEventListener('mousedown', pointerDown);
+  knob.addEventListener('touchstart', pointerDown, {passive:true});
+  window.addEventListener('mousemove', pointerMove);
+  window.addEventListener('touchmove', pointerMove, {passive:true});
+  window.addEventListener('mouseup', pointerUp);
+  window.addEventListener('touchend', pointerUp);
+})();
+
+/* ============================================================
+   EDIT / SAVE / SHARE LINK
+   ============================================================ */
+function saveProfile(){
+  state = {
+    name: document.getElementById('f-name').value.trim() || DEFAULTS.name,
+    club: document.getElementById('f-club').value.trim() || DEFAULTS.club,
+    membership: document.getElementById('f-membership').value.trim() || DEFAULTS.membership,
+    status: document.getElementById('f-status').value,
+    price: parseFloat(document.getElementById('f-price').value) || 0,
+    visits: parseInt(document.getElementById('f-visits').value) || 0,
+    classes: parseInt(document.getElementById('f-classes').value) || 0,
+    appts: parseInt(document.getElementById('f-appts').value) || 0,
+    till: document.getElementById('f-till').value || DEFAULTS.till
+  };
+  localStorage.setItem('graniteFitProfile', JSON.stringify(state));
+  render();
+
+  const json = JSON.stringify(state);
+  const b64 = btoa(unescape(encodeURIComponent(json))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const url = new URL(location.href);
+  url.search = 'd=' + b64;
+  url.hash = 'home';
+
+  document.getElementById('share-link').value = url.toString();
+  document.getElementById('link-panel').style.display = 'block';
+  toast('Profile saved');
+}
+
+function copyLink(){
+  const input = document.getElementById('share-link');
+  input.select();
+  input.setSelectionRange(0, 999);
+  navigator.clipboard?.writeText(input.value).then(()=>{
+    toast('Link copied');
+  }).catch(()=>{
+    document.execCommand('copy');
+    toast('Link copied');
+  });
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+render();
+
+const startHash = location.hash.replace('#','');
+const startScreen = ['home','account','access','edit'].includes(startHash) ? startHash : 'home';
+
+setTimeout(()=>{
+  document.getElementById('screen-splash').style.transition = 'opacity .4s ease';
+  document.getElementById('screen-splash').style.opacity = '0';
+  setTimeout(()=>{
+    document.getElementById('screen-splash').classList.remove('active');
+    document.getElementById('screen-splash').style.display = 'none';
+    go(startScreen, {silent:true});
+    history.replaceState({screen:startScreen}, '', location.href);
+  }, 400);
+}, 3000);
+</script>
+</body>
+</html>
