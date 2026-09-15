@@ -253,7 +253,11 @@
     color:var(--ink); position:relative; z-index:2;
   }
   .slider-knob svg{ width:19px; height:19px; }
-  .slider-hint{ text-align:center; color:var(--gray-2); font-weight:600; font-size:12.5px; margin-top:10px; }
+  .slider-hint{ text-align:center; color:var(--gray-2); font-weight:600; font-size:12.5px; margin-top:10px; transition:color .2s ease; }
+  .slider-hint.sending{ color:var(--orange); }
+  .slider-hint.success{ color:var(--green-ink); }
+  .slider-hint.fail{ color:#DC3131; }
+  .slider-knob.busy{ pointer-events:none; opacity:.85; }
 
   /* ---------- BOTTOM NAV ---------- */
   .bottom-nav{
@@ -593,7 +597,76 @@
   <div class="toast" id="toast"></div>
 </div>
 
-<script>
+<script type="module">
+/* ============================================================
+   FIRESTORE — bridge to the home-PC Python script
+   ============================================================
+   Flow: the app writes a "pending" command doc to Firestore.
+   Your Python script (using the Admin SDK) is listening for new
+   pending docs, does the real-world action, then flips that same
+   doc's status to "success" or "fail". This tab is listening on
+   that exact doc and resolves as soon as it changes — no polling,
+   no backend of ours, Firestore is the whole bridge.
+   ============================================================ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, doc, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDFGcOnOwB2RvJJMoHOWuRcIhdbKV5pYms",
+  authDomain: "granite-ac708.firebaseapp.com",
+  projectId: "granite-ac708",
+  storageBucket: "granite-ac708.firebasestorage.app",
+  messagingSenderId: "176760762914",
+  appId: "1:176760762914:web:eddc706fd4e62f64a5d07b"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
+const COMMANDS_COLLECTION = 'doorCommands';
+const COMMAND_TIMEOUT_MS = 15000; // give up waiting for the PC script after this long
+
+/**
+ * Writes a new pending command, then waits for the Python script to
+ * update that doc's status. Resolves { ok, message, timedOut } —
+ * never rejects, so callers don't need try/catch.
+ */
+function sendDoorCommand(device, action){
+  return new Promise((resolve) => {
+    let settled = false;
+    let unsub = null;
+
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (unsub) unsub();
+      resolve(result);
+    };
+
+    const timer = setTimeout(()=>{
+      finish({ ok:false, message:'No response from device', timedOut:true });
+    }, COMMAND_TIMEOUT_MS);
+
+    addDoc(collection(db, COMMANDS_COLLECTION), {
+      device, action, status:'pending', message:'',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    }).then((ref)=>{
+      unsub = onSnapshot(doc(db, COMMANDS_COLLECTION, ref.id), (snap)=>{
+        const data = snap.data();
+        if (!data || data.status === 'pending') return;
+        finish({ ok: data.status === 'success', message: data.message || '' });
+      }, (err)=>{
+        finish({ ok:false, message: err.message || 'Connection error' });
+      });
+    }).catch((err)=>{
+      finish({ ok:false, message: err.message || 'Could not reach Firestore' });
+    });
+  });
+}
+
 /* ============================================================
    STATE
    ============================================================ */
@@ -815,13 +888,19 @@ function toast(msg){
   const track = document.getElementById('slider-track');
   const knob = document.getElementById('slider-knob');
   const hint = document.getElementById('slider-hint');
-  let dragging = false, startX = 0, knobX = 0, maxX = 0;
+  let dragging = false, busy = false, startX = 0, knobX = 0, maxX = 0;
 
   function bounds(){
     maxX = track.clientWidth - knob.offsetWidth - 8;
   }
 
+  function setHint(state, text){
+    hint.className = 'slider-hint' + (state ? ' ' + state : '');
+    hint.textContent = text;
+  }
+
   function pointerDown(e){
+    if (busy) return;
     dragging = true;
     bounds();
     startX = (e.touches ? e.touches[0].clientX : e.clientX) - knobX;
@@ -833,19 +912,37 @@ function toast(msg){
     knobX = Math.max(0, Math.min(maxX, x));
     knob.style.transform = `translateX(${knobX}px)`;
   }
-  function pointerUp(){
+  async function pointerUp(){
     if(!dragging) return;
     dragging = false;
     knob.style.transition = 'transform .25s cubic-bezier(.2,.8,.3,1)';
+
     if (knobX > maxX * 0.82){
       knob.style.transform = `translateX(${maxX}px)`;
-      hint.textContent = 'Door unlocked ✓';
-      toast('Main Door unlocked');
+      busy = true;
+      knob.classList.add('busy');
+      setHint('sending', 'Sending to Main Door\u2026');
+
+      const result = await sendDoorCommand('main_door', 'unlock');
+
+      if (result.ok){
+        setHint('success', 'Door unlocked \u2713');
+        toast('Main Door unlocked');
+      } else if (result.timedOut){
+        setHint('fail', 'No response \u2014 is your PC script running?');
+        toast('No response from device');
+      } else {
+        setHint('fail', 'Failed' + (result.message ? ': ' + result.message : ''));
+        toast('Unlock failed');
+      }
+
       setTimeout(()=>{
         knob.style.transform = 'translateX(0)';
-        hint.textContent = 'Slide to unlock the door';
         knobX = 0;
-      }, 1100);
+        busy = false;
+        knob.classList.remove('busy');
+        setHint('', 'Slide to unlock the door');
+      }, 1800);
     } else {
       knob.style.transform = 'translateX(0)';
       knobX = 0;
@@ -904,6 +1001,16 @@ function copyLink(){
 /* ============================================================
    BOOT
    ============================================================ */
+// This script now runs as an ES module (needed for the Firebase
+// imports above), so functions referenced by inline onclick="" in
+// the HTML need to be attached to window explicitly — modules don't
+// leak their top-level declarations into global scope like classic
+// scripts do.
+window.go = go;
+window.toast = toast;
+window.saveProfile = saveProfile;
+window.copyLink = copyLink;
+
 render();
 
 const startHash = location.hash.replace('#','');
