@@ -310,6 +310,36 @@
     z-index:200; white-space:nowrap;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ---------- SETTINGS ---------- */
+  .setting-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:18px; background:var(--card); border-radius:24px; border:1px solid var(--border);
+    margin-bottom:16px;
+  }
+  .setting-text h4{ margin:0 0 3px; font-size:15.5px; font-weight:600; }
+  .setting-text p{ margin:0; color:var(--gray); font-size:13px; font-weight:500; line-height:1.4; }
+  .switch{
+    position:relative; width:48px; height:29px; flex:none; border:none; padding:0;
+    background:#DADDE3; border-radius:999px; transition:background .2s ease;
+  }
+  .switch::after{
+    content:''; position:absolute; top:3px; left:3px; width:23px; height:23px;
+    background:#fff; border-radius:50%; box-shadow:0 1px 3px rgba(20,20,40,.25);
+    transition:transform .2s ease;
+  }
+  .switch.on{ background:var(--orange); }
+  .switch.on::after{ transform:translateX(19px); }
+
+  .reset-btn{
+    width:100%; background:#fff; border:1.5px solid #F3B9B9; color:#DC3131;
+    font-weight:600; font-size:15.5px; padding:16px; border-radius:16px;
+  }
+  .reset-btn:disabled{ opacity:.5; }
+  .reset-status{ text-align:center; color:var(--gray); font-weight:500; font-size:13px; margin-top:10px; min-height:16px; }
+  .reset-status.working{ color:var(--orange); }
+  .reset-status.ok{ color:var(--green-ink); }
+  .reset-status.err{ color:#DC3131; }
 </style>
 </head>
 <body>
@@ -436,6 +466,11 @@
         <button class="list-row" onclick="toast('Change Club')">
           <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
           <span class="row-label">Change Club</span>
+          <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <button class="list-row" onclick="go('settings')">
+          <svg class="row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.36a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.64 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></svg>
+          <span class="row-label">Settings</span>
           <svg class="row-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
         </button>
       </div>
@@ -575,6 +610,30 @@
     </div>
   </div>
 
+  <!-- ============ SETTINGS ============ -->
+  <div id="screen-settings" class="screen">
+    <div class="screen-scroll">
+      <div class="back-row">
+        <button class="icon-btn" style="border:none;background:none;width:28px;height:28px;" onclick="go('account')" aria-label="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="header-title">Settings</div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <h4>Debug mode</h4>
+          <p>Shows every status popup, including messages sent back from your PC (received, opened app, complete, etc).</p>
+        </div>
+        <button class="switch" id="debug-switch" onclick="toggleDebug()" aria-label="Toggle debug mode"></button>
+      </div>
+
+      <div class="section-label">Troubleshooting</div>
+      <button class="reset-btn" onclick="resetBlueStacks()" id="reset-btn">Reset BlueStacks</button>
+      <div class="reset-status" id="reset-status"></div>
+    </div>
+  </div>
+
   <!-- ============ BOTTOM NAV (shared) ============ -->
   <div class="bottom-nav" id="bottom-nav">
     <button class="nav-btn" data-tab="home" onclick="go('home')" aria-label="Home">
@@ -637,6 +696,7 @@ function sendDoorCommand(device, action){
   return new Promise((resolve) => {
     let settled = false;
     let unsub = null;
+    let lastStage = null;
 
     const finish = (result) => {
       if (settled) return;
@@ -652,11 +712,24 @@ function sendDoorCommand(device, action){
 
     addDoc(collection(db, COMMANDS_COLLECTION), {
       device, action, status:'pending', message:'',
+      stage:'sent', stageMessage:'Command sent',
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     }).then((ref)=>{
       unsub = onSnapshot(doc(db, COMMANDS_COLLECTION, ref.id), (snap)=>{
         const data = snap.data();
-        if (!data || data.status === 'pending') return;
+        if (!data) return;
+
+        // The PC script pushes intermediate progress (received, opened
+        // app, pressing button, etc) via stage/stageMessage while status
+        // is still "pending". Each new stage gets its own debug toast
+        // (toast() itself no-ops when debug mode is off) without
+        // resolving the promise yet.
+        if (data.stage && data.stage !== lastStage){
+          lastStage = data.stage;
+          toast(data.stageMessage || data.stage, {raw:true});
+        }
+
+        if (data.status === 'pending') return;
         finish({ ok: data.status === 'success', message: data.message || '' });
       }, (err)=>{
         finish({ ok:false, message: err.message || 'Connection error' });
@@ -700,6 +773,35 @@ function loadState(){
 }
 
 let state = loadState();
+
+/* ============================================================
+   SETTINGS (device-local, never part of the shareable link)
+   ============================================================ */
+const SETTINGS_DEFAULTS = { debug: false };
+
+function loadSettings(){
+  try{
+    const stored = localStorage.getItem('graniteFitSettings');
+    if (stored) return Object.assign({}, SETTINGS_DEFAULTS, JSON.parse(stored));
+  }catch(e){}
+  return Object.assign({}, SETTINGS_DEFAULTS);
+}
+
+let settings = loadSettings();
+
+function saveSettings(){
+  localStorage.setItem('graniteFitSettings', JSON.stringify(settings));
+}
+
+function renderSettings(){
+  document.getElementById('debug-switch').classList.toggle('on', !!settings.debug);
+}
+
+function toggleDebug(){
+  settings.debug = !settings.debug;
+  saveSettings();
+  renderSettings();
+}
 
 /* ============================================================
    HELPERS
@@ -774,10 +876,10 @@ function render(){
 /* ============================================================
    ROUTING + TRANSITIONS
    ============================================================ */
-const NAV_MAP = { home:'home', account:'account', access:'account', edit:'account' };
+const NAV_MAP = { home:'home', account:'account', access:'account', edit:'account', settings:'account' };
 // left-to-right "rank" of each screen — decides which way the tile slides.
 // Moving to a higher rank slides left (forward); a lower rank slides right (back).
-const RANK = { home:0, account:1, access:2, edit:2 };
+const RANK = { home:0, account:1, access:2, edit:2, settings:2 };
 const EASE = 'cubic-bezier(.65,0,.35,1)';
 const ANIM_MS = 240;
 
@@ -873,9 +975,14 @@ window.addEventListener('popstate', (e)=>{
    TOAST
    ============================================================ */
 let toastTimer;
-function toast(msg){
+// Every popup in the app — demo-button toasts AND real messages from the
+// PC script — goes through here, and every one of them is gated on debug
+// mode. Debug off means genuinely zero popups, not just fewer of them.
+function toast(msg, opts){
+  opts = opts || {};
+  if (!settings.debug) return;
   const t = document.getElementById('toast');
-  t.textContent = msg + ' — demo only';
+  t.textContent = opts.raw ? msg : (msg + ' — demo only');
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
@@ -927,13 +1034,13 @@ function toast(msg){
 
       if (result.ok){
         setHint('success', 'Door unlocked \u2713');
-        toast('Main Door unlocked');
+        toast('Main Door unlocked', {raw:true});
       } else if (result.timedOut){
         setHint('fail', 'No response \u2014 is your PC script running?');
-        toast('No response from device');
+        toast('No response from device', {raw:true});
       } else {
         setHint('fail', 'Failed' + (result.message ? ': ' + result.message : ''));
-        toast('Unlock failed');
+        toast('Unlock failed', {raw:true});
       }
 
       setTimeout(()=>{
@@ -999,6 +1106,42 @@ function copyLink(){
 }
 
 /* ============================================================
+   RESET (Settings screen)
+   ============================================================ */
+// This talks to the same Firestore bridge as the door slider, just with
+// device:"system", action:"reset" instead. The result shows in a plain
+// inline status line rather than a toast() — it's the direct result of
+// a button you just pressed, not an ambient popup, so it always shows
+// regardless of the debug mode setting.
+let resetting = false;
+async function resetBlueStacks(){
+  if (resetting) return;
+  resetting = true;
+
+  const btn = document.getElementById('reset-btn');
+  const status = document.getElementById('reset-status');
+  btn.disabled = true;
+  status.className = 'reset-status working';
+  status.textContent = 'Closing BlueStacks and restarting the script\u2026';
+
+  const result = await sendDoorCommand('system', 'reset');
+
+  if (result.ok){
+    status.className = 'reset-status ok';
+    status.textContent = 'Done \u2014 BlueStacks closed, script restarted.';
+  } else if (result.timedOut){
+    status.className = 'reset-status err';
+    status.textContent = 'No response \u2014 is your PC script running?';
+  } else {
+    status.className = 'reset-status err';
+    status.textContent = 'Failed' + (result.message ? ': ' + result.message : '');
+  }
+
+  btn.disabled = false;
+  resetting = false;
+}
+
+/* ============================================================
    BOOT
    ============================================================ */
 // This script now runs as an ES module (needed for the Firebase
@@ -1010,8 +1153,11 @@ window.go = go;
 window.toast = toast;
 window.saveProfile = saveProfile;
 window.copyLink = copyLink;
+window.toggleDebug = toggleDebug;
+window.resetBlueStacks = resetBlueStacks;
 
 render();
+renderSettings();
 
 const startHash = location.hash.replace('#','');
 const startScreen = ['home','account','access','edit'].includes(startHash) ? startHash : 'home';
